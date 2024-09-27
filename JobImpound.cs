@@ -2,14 +2,20 @@
 using JobImpound.Entities;
 using JobImpound.Panels;
 using Life;
+using Life.AreaSystem;
 using Life.BizSystem;
+using Life.DB;
 using Life.Network;
+using Life.VehicleSystem;
 using ModKit.Helper;
 using ModKit.Interfaces;
-using Socket.Newtonsoft.Json;
+using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using UnityEngine;
+using static JobImpound.Entities.JobImpound_Vehicle;
 using _menu = AAMenu.Menu;
 using mk = ModKit.Helper.TextFormattingHelper;
 
@@ -22,6 +28,8 @@ namespace JobImpound
         public static string ConfigJobImpoundPath;
         public static JobImpoundConfig _jobImpoundConfig;
         #endregion
+
+        public const int TOWTRUCK_ID = 12;
 
         public static Dictionary<uint, Coroutine> activeCoroutines = new Dictionary<uint, Coroutine>();
         public ImpoundPanelsManager ImpoundPanelsManager;
@@ -82,6 +90,24 @@ namespace JobImpound
         }
         #endregion
 
+        #region UTILS
+        public static Vehicle GetClosestVehicle(Player player)
+        {
+            Vehicle[] objectsOfType = UnityEngine.Object.FindObjectsOfType<Vehicle>();
+
+            foreach (Vehicle vehicle in objectsOfType)
+            {
+                float distance = Vector3.Distance(player.setup.transform.position, vehicle.transform.position);
+                if (distance < JobImpound._jobImpoundConfig.MaxDistance && Nova.v.GetVehicle(vehicle.vehicleDbId).modelId != JobImpound.TOWTRUCK_ID)
+                {
+                    return vehicle;
+                }
+            }
+
+            return null;
+        }
+        #endregion
+
         public void InsertMenu()
         {
             _menu.AddAdminTabLine(PluginInformations, 5, "JobImpound", (ui) =>
@@ -90,16 +116,16 @@ namespace JobImpound
                 ImpoundPanelsManager.AdminPanels.JobImpoundPanel(player);
             });
 
+            /*_menu.AddBizTabLine(PluginInformations, new List<Activity.Type> { Activity.Type.LawEnforcement }, null, $"{mk.Color("[Fourrière] proximité", mk.Colors.Purple)}", (ui) =>
+            {
+                Player player = PanelHelper.ReturnPlayerFromPanel(ui);
+                //code
+            }, 2);*/
+
             _menu.AddBizTabLine(PluginInformations, new List<Activity.Type> { Activity.Type.Fourriere }, null, $"{mk.Color("proximité", mk.Colors.Info)}", (ui) =>
             {
                 Player player = PanelHelper.ReturnPlayerFromPanel(ui);
                 ImpoundPanelsManager.ImpoundProximityPanel(player);
-            }, 2);
-
-            _menu.AddBizTabLine(PluginInformations, new List<Activity.Type> { Activity.Type.LawEnforcement }, null, $"{mk.Color("[Fourrière] proximité", mk.Colors.Purple)}", (ui) =>
-            {
-                Player player = PanelHelper.ReturnPlayerFromPanel(ui);
-                //code
             }, 2);
 
             _menu.AddBizTabLine(PluginInformations, new List<Activity.Type> { Activity.Type.Fourriere, Activity.Type.Mecanic }, null, "Dépannage", (ui) =>
@@ -107,6 +133,55 @@ namespace JobImpound
                 Player player = PanelHelper.ReturnPlayerFromPanel(ui);
                 ImpoundPanelsManager.SkillPanels.TroubleshootingPanel(player);
             });
+
+            _menu.AddBizTabLine(PluginInformations, new List<Activity.Type> { Activity.Type.Fourriere }, null, "Immobiliser un véhicule", async (ui) =>
+            {
+                Player player = PanelHelper.ReturnPlayerFromPanel(ui);
+
+                Vehicle vehicle = GetClosestVehicle(player);
+            if (vehicle != null)
+                {
+                    var vehicleInfo = Nova.v.GetVehicle(vehicle.vehicleDbId);
+
+                    string immobiliseStatus = VehicleStatus.Immobilise.ToString();
+                    string nonReclameStatus = VehicleStatus.NonReclame.ToString();
+                    List<JobImpound_Vehicle> vehicles = await JobImpound_Vehicle.Query(v => v.Status == immobiliseStatus || v.Status == nonReclameStatus);
+
+                    if (vehicles.Any(v => v.VehicleId == vehicle.vehicleDbId))
+                    {
+                        player.Notify("Fourrière", "Ce véhicule est déjà immobilisé", NotificationManager.Type.Info);
+                    }
+                    else
+                    {
+                        JobImpound_Vehicle newVehicle = new JobImpound_Vehicle();
+                        newVehicle.VehicleId = vehicle.vehicleDbId;
+                        newVehicle.ModelId = vehicleInfo.modelId;
+                        newVehicle.Plate = vehicle.plate;
+                        newVehicle.BizId = vehicle.bizId;
+
+                        var biz = Nova.biz.FetchBiz(vehicle.bizId);
+                        if (Nova.biz.FetchBiz(vehicle.bizId) != null) newVehicle.BizName = biz.BizName;
+
+                        if(vehicleInfo != null)
+                        {
+                            var owner = await LifeDB.db.Table<Characters>().Where(c => c.Id == vehicleInfo.permissions.owner.characterId).FirstOrDefaultAsync();
+
+                            if (owner != null)
+                            {
+                                Console.WriteLine("owner: " + owner != null);
+
+                                newVehicle.OwnerId = owner.Id;
+                                newVehicle.OwnerFullName = owner.Firstname+" "+owner.Lastname;
+                            }
+                        }
+                        
+                        newVehicle.LStatus = VehicleStatus.Immobilise;
+
+                        ImpoundPanelsManager.SkillPanels.ImmobiliseVehicleReasonPanel(player, newVehicle);
+                    }
+                } else player.Notify("Dépannage", $"Aucun véhicule à proximité", NotificationManager.Type.Info);
+            });
+
         }
     }
 }

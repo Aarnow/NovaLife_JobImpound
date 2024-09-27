@@ -1,15 +1,19 @@
-﻿using JobImpound.Classes;
+﻿using JobImpound.Entities;
 using Life;
 using Life.Network;
 using Life.UI;
 using Life.VehicleSystem;
 using Mirror;
 using ModKit.Helper;
+using ModKit.Utils;
 using SQLite;
+using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using UnityEngine;
+using static JobImpound.Entities.JobImpound_Vehicle;
 
 namespace JobImpound.Panels.Skill
 {
@@ -54,14 +58,6 @@ namespace JobImpound.Panels.Skill
             Panel panel = Context.PanelHelper.Create("Dépannage - Véhicule", UIPanel.PanelType.Tab, player, () => TroubleshootingPanel(player));
 
             //Corps
-            panel.AddTabLine("Déverrouiller", async _ =>
-            {
-                var vehicle = player.GetClosestVehicle();
-                vehicle.NetworkisLocked = false;
-                player.Notify("Dépannage", "Véhicule déverrouillé pendant 60 secondes.", NotificationManager.Type.Info);
-                await Task.Delay(1000 * JobImpound._jobImpoundConfig.UnlockingDuration);
-                vehicle.NetworkisLocked = true;
-            });
             panel.AddTabLine("Démarrer", async _ =>
             {
                 if (player.setup.driver.NetworkcurrentVehicle != 0 && player.setup.driver.seatId == 0)
@@ -92,8 +88,20 @@ namespace JobImpound.Panels.Skill
                 }
                 if (!player.setup.driver.vehicle.newController.EngineRunning) panel.Refresh();
             });
+            panel.AddTabLine("Déverrouiller", async _ =>
+            {
+                Vehicle vehicle = JobImpound.GetClosestVehicle(player);
+                if(vehicle != null)
+                {
+                    vehicle.NetworkisLocked = false;
+                    player.Notify("Dépannage", $"Véhicule déverrouillé pendant {JobImpound._jobImpoundConfig.UnlockingDuration} secondes.", NotificationManager.Type.Info);
+                    await Task.Delay(1000 * JobImpound._jobImpoundConfig.UnlockingDuration);
+                    vehicle.NetworkisLocked = true;
+                }
+                else player.Notify("Dépannage", $"Aucun véhicule à proximité", NotificationManager.Type.Info);
+            });
 
-            // Boutons
+            //Boutons
             panel.NextButton("Sélectionner", () => panel.SelectTab());
             panel.AddButton("Retour", _ => AAMenu.AAMenu.menu.BizPanel(player, AAMenu.AAMenu.menu.BizTabLines));
             panel.CloseButton();
@@ -101,5 +109,66 @@ namespace JobImpound.Panels.Skill
             //Affichage
             panel.Display();
         }
+
+        #region IMMOBILISE
+        public async void ImmobiliseVehicleReasonPanel(Player player, JobImpound_Vehicle vehicle)
+        {
+            //Query
+            List<JobImpound_Reason> query = await JobImpound_Reason.QueryAll();
+
+            //Déclaration
+            Panel panel = Context.PanelHelper.Create("Fourrière - Raison de l'immobilisation", UIPanel.PanelType.TabPrice, player, () => ImmobiliseVehicleReasonPanel(player, vehicle));
+
+            //Corps
+            foreach (var reason in query)
+            {
+                panel.AddTabLine($"{reason.Title}", _ =>
+                {
+                    vehicle.ReasonId = reason.Id;
+                    ImmobiliseVehicleEvidencePanel(player, vehicle);
+                });
+            }
+
+            //Boutons
+            panel.NextButton("Sélectionner", () => panel.SelectTab());
+            panel.AddButton("Retour", _ => AAMenu.AAMenu.menu.BizPanel(player, AAMenu.AAMenu.menu.BizTabLines));
+            panel.CloseButton();
+
+            //Affichage
+            panel.Display();
+        }
+
+            public void ImmobiliseVehicleEvidencePanel(Player player, JobImpound_Vehicle vehicle)
+        {
+            //Déclaration
+            Panel panel = Context.PanelHelper.Create("Fourrière - Preuve de l'infraction", UIPanel.PanelType.Input, player, () => ImmobiliseVehicleEvidencePanel(player, vehicle));
+
+            //Corps
+            panel.TextLines.Add("Renseigner des informations permettant de consulter les preuves de l'infraction");
+
+            //Boutons
+            panel.CloseButtonWithAction("Enregistrer", async () =>
+            {
+                vehicle.Evidence = panel.inputText;
+                vehicle.CreatedAt = DateUtils.GetCurrentTime();
+                vehicle.CreatedBy = player.character.Id;
+                if (await vehicle.Save())
+                {
+                    player.Notify("Fourrière", "Immobilisation enregistré", NotificationManager.Type.Success);
+                    return true;
+                }
+                else
+                {
+                    player.Notify("Fourrière", "Nous n'avons pas pu enregistrer cette immobilisation", NotificationManager.Type.Error);
+                    return false;
+                }
+            });
+            panel.PreviousButton();
+            panel.CloseButton();
+
+            //Affichage
+            panel.Display();
+        }
+        #endregion
     }
 }

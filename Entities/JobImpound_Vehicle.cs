@@ -26,7 +26,7 @@ namespace JobImpound.Entities
         public int VehicleId { get; set; }
         public int ModelId { get; set; }
         public string Plate { get; set; }
-        public double BizId { get; set; }
+        public int BizId { get; set; }
         public string BizName { get; set; }
         public int OwnerId { get; set; }
         public string OwnerFullName { get; set; }
