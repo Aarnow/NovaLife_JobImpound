@@ -12,18 +12,18 @@ namespace JobImpound.Panels
 {
     public class ImpoundPanelsManager
     {
-        public ImpoundSkillPanels SkillPanels;
         public AdminPanels AdminPanels;
         public ImpoundPanels ImpoundPanels;
+        public ImpoundSkillPanels ImpoundSkillPanels;
 
         [Ignore] public ModKit.ModKit Context { get; set; }
 
         public ImpoundPanelsManager(ModKit.ModKit context)
         {
             Context = context;
-            SkillPanels = new ImpoundSkillPanels(context);
             AdminPanels = new AdminPanels(context);
             ImpoundPanels = new ImpoundPanels(context);
+            ImpoundSkillPanels = new ImpoundSkillPanels(context);
         }
 
         public void ImpoundProximityPanel(Player player)

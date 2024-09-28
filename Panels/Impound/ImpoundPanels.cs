@@ -83,7 +83,7 @@ namespace JobImpound.Panels.Impound
                 player.Notify("Central", "Vous ne pouvez pas modifier cette valeur", NotificationManager.Type.Info);
                 panel.Refresh();
             });
-            panel.AddTabLine($"{mk.Color("Propriétaire:", mk.Colors.Info)} {(vehicle.BizId != default ? $"{vehicle.BizName}" : $"{(vehicle.OwnerId != default ? $"{vehicle.OwnerFullName}" : $"{mk.Color("inconnu", mk.Colors.Grey)}")}")}", _ =>
+            panel.AddTabLine($"{mk.Color("Propriétaire:", mk.Colors.Info)} {(vehicle.BizId != default ? $"{BizUtils.BizNameWithoutId(vehicle.BizName)}" : $"{(vehicle.OwnerId != default ? $"{vehicle.OwnerFullName}" : $"{mk.Color("inconnu", mk.Colors.Grey)}")}")}", _ =>
             {
                 player.Notify("Central", "Vous ne pouvez pas modifier cette valeur", NotificationManager.Type.Info);
                 panel.Refresh();

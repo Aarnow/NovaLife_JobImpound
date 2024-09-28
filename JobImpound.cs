@@ -49,7 +49,6 @@ namespace JobImpound
 
             Orm.RegisterTable<JobImpound_Vehicle>();
             Orm.RegisterTable<JobImpound_Reason>();
-            Orm.RegisterTable<JobImpound_Certificate>();
 
             InsertMenu();
             ModKit.Internal.Logger.LogSuccess($"{PluginInformations.SourceName} v{PluginInformations.Version}", "initialisé");
@@ -119,60 +118,15 @@ namespace JobImpound
                 ImpoundPanelsManager.AdminPanels.JobImpoundPanel(player);
             });
 
-            #region CITIZEN SKILLS
-            _menu.AddDocumentTabLine(PluginInformations, "Cartes grises", (ui) =>
-            {
-                Player player = PanelHelper.ReturnPlayerFromPanel(ui);
-                //code
-            });
-            #endregion
-
             #region LAW ENFORCEMENT SKILLS
             _menu.AddBizTabLine(PluginInformations, new List<Activity.Type> { Activity.Type.LawEnforcement }, null, $"{mk.Color($"Proximité {mk.Italic("[fourrière]")}", mk.Colors.Purple)}", (ui) =>
             {
                 Player player = PanelHelper.ReturnPlayerFromPanel(ui);
                 //code
             }, 2);
-
-            _menu.AddBizTabLine(PluginInformations, new List<Activity.Type> { Activity.Type.LawEnforcement }, null, "Contrôler la carte grise", (ui) =>
-            {
-                Player player = PanelHelper.ReturnPlayerFromPanel(ui);
-                //code
-            });
             #endregion
 
-            #region MECANIC SKILLS
-            _menu.AddBizTabLine(PluginInformations, new List<Activity.Type> { Activity.Type.Mecanic }, null, $"Délivrer une carte grise", async (ui) =>
-            {
-                Player player = PanelHelper.ReturnPlayerFromPanel(ui);
-                Player target = player.GetClosestPlayer();
-                Vehicle vehicle = GetClosestVehicle(player);
-
-                if(player.setup.areaId == player.biz.TerrainId)
-                {
-                    if (target != null)
-                    {
-                        if (vehicle != null)
-                        {
-                            var vehicleInfo = Nova.v.GetVehicle(vehicle.vehicleDbId);
-                            if(vehicleInfo != null && vehicleInfo.permissions.owner.characterId == target.character.Id)
-                            {
-                                List<JobImpound_Certificate> certificates = await JobImpound_Certificate.Query(c => c.Plate == vehicle.plate);
-                                if (certificates != null && certificates.Count > 0)
-                                {
-                                    //code
-                                }
-                                else player.Notify("Carte Grise", $"Ce véhicule possède déjà une carte grise", NotificationManager.Type.Info);
-                            }
-                            else player.Notify("Carte Grise", $"Ce véhicule n'appartient pas à {target.GetFullName()}", NotificationManager.Type.Info);
-                        }
-                        else player.Notify("Carte Grise", $"Aucun véhicule n'est à proximité", NotificationManager.Type.Info);
-                    }
-                    else player.Notify("Carte Grise", $"Aucun citoyen n'est à proximité", NotificationManager.Type.Info);
-                }
-                else player.Notify("Carte Grise", $"Vous ne pouvez délivrer une carte grise qu'en étant sur le terrain de votre société", NotificationManager.Type.Info);
-            });
-
+            #region IMPOUND SKILLS
             _menu.AddBizTabLine(PluginInformations, new List<Activity.Type> { Activity.Type.Fourriere }, null, $"{mk.Color("Proximité", mk.Colors.Info)}", (ui) =>
             {
                 Player player = PanelHelper.ReturnPlayerFromPanel(ui);
@@ -182,7 +136,7 @@ namespace JobImpound
             _menu.AddBizTabLine(PluginInformations, new List<Activity.Type> { Activity.Type.Fourriere, Activity.Type.Mecanic }, null, "Dépannage", (ui) =>
             {
                 Player player = PanelHelper.ReturnPlayerFromPanel(ui);
-                ImpoundPanelsManager.SkillPanels.TroubleshootingPanel(player);
+                ImpoundPanelsManager.ImpoundSkillPanels.TroubleshootingPanel(player);
             });
 
             _menu.AddBizTabLine(PluginInformations, new List<Activity.Type> { Activity.Type.Fourriere }, null, "Immobiliser un véhicule", async (ui) =>
@@ -191,7 +145,7 @@ namespace JobImpound
 
                 if (player.setup.areaId == player.biz.TerrainId)
                 {
-                    Vehicle vehicle = GetClosestVehicle(player, new List<int> { JobImpound.TOWTRUCK_ID });
+                    Vehicle vehicle = GetClosestVehicle(player, new List<int> { TOWTRUCK_ID });
                     if (vehicle != null)
                     {
                         var vehicleInfo = Nova.v.GetVehicle(vehicle.vehicleDbId);
@@ -230,7 +184,7 @@ namespace JobImpound
 
                             newVehicle.LStatus = VehicleStatus.Immobilise;
 
-                            ImpoundPanelsManager.SkillPanels.ImmobiliseVehicleReasonPanel(player, newVehicle);
+                            ImpoundPanelsManager.ImpoundSkillPanels.ImmobiliseVehicleReasonPanel(player, newVehicle);
                         }
                     }
                     else player.Notify("Fourrière", $"Aucun véhicule à proximité", NotificationManager.Type.Info);
