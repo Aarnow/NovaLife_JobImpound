@@ -30,6 +30,8 @@ namespace JobImpound.Entities
         public static JobImpound_Certificate CreateCertificate(Player player, Player target, LifeVehicle vehicle, bool isBizOwner = false)
         {
             JobImpound_Certificate newCertificate = new JobImpound_Certificate();
+
+            newCertificate.CharacterId = target.character.Id;
             newCertificate.VehicleId = vehicle.vehicleId;
             newCertificate.ModelId = vehicle.modelId;
             newCertificate.Plate = vehicle.plate;

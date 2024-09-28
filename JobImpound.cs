@@ -119,12 +119,15 @@ namespace JobImpound
                 ImpoundPanelsManager.AdminPanels.JobImpoundPanel(player);
             });
 
+            #region CITIZEN SKILLS
             _menu.AddDocumentTabLine(PluginInformations, "Cartes grises", (ui) =>
             {
                 Player player = PanelHelper.ReturnPlayerFromPanel(ui);
                 //code
             });
+            #endregion
 
+            #region LAW ENFORCEMENT SKILLS
             _menu.AddBizTabLine(PluginInformations, new List<Activity.Type> { Activity.Type.LawEnforcement }, null, $"{mk.Color($"Proximité {mk.Italic("[fourrière]")}", mk.Colors.Purple)}", (ui) =>
             {
                 Player player = PanelHelper.ReturnPlayerFromPanel(ui);
@@ -136,7 +139,9 @@ namespace JobImpound
                 Player player = PanelHelper.ReturnPlayerFromPanel(ui);
                 //code
             });
+            #endregion
 
+            #region MECANIC SKILLS
             _menu.AddBizTabLine(PluginInformations, new List<Activity.Type> { Activity.Type.Mecanic }, null, $"Délivrer une carte grise", async (ui) =>
             {
                 Player player = PanelHelper.ReturnPlayerFromPanel(ui);
@@ -232,7 +237,7 @@ namespace JobImpound
                 }
                 else player.Notify("Fourrière", $"Vous ne pouvez immobilser un véhicule qu'en étant sur le terrain de votre société", NotificationManager.Type.Info);
             });
-
+            #endregion
         }
     }
 }

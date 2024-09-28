@@ -3,14 +3,13 @@ using Life.Network;
 using Life.UI;
 using Life.VehicleSystem;
 using ModKit.Helper;
-using ModKit.Utils;
 using SQLite;
 using System.Threading.Tasks;
 using mk = ModKit.Helper.TextFormattingHelper;
 
 namespace JobImpound.Panels.Skill
 {
-    internal class MecanicSkillPanels
+    public class MecanicSkillPanels
     {
         [Ignore] public ModKit.ModKit Context { get; set; }
 

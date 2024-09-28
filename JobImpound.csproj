@@ -72,6 +72,7 @@
     <Compile Include="Panels\Admin\AdminPanels.cs" />
     <Compile Include="Panels\ImpoundPanelsManager.cs" />
     <Compile Include="Panels\Impound\ImpoundPanels.cs" />
+    <Compile Include="Panels\Skill\CitizenSkillPanels.cs" />
     <Compile Include="Panels\Skill\ImpoundSkillPanels.cs" />
     <Compile Include="Panels\Skill\MecanicSkillPanels.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
