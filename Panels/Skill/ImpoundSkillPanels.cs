@@ -7,21 +7,19 @@ using Mirror;
 using ModKit.Helper;
 using ModKit.Utils;
 using SQLite;
-using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using UnityEngine;
-using static JobImpound.Entities.JobImpound_Vehicle;
 
 namespace JobImpound.Panels.Skill
 {
-    public class SkillPanels
+    public class ImpoundSkillPanels
     {
         [Ignore] public ModKit.ModKit Context { get; set; }
 
-        public SkillPanels(ModKit.ModKit context)
+        public ImpoundSkillPanels(ModKit.ModKit context)
         {
             Context = context;
         }
@@ -90,7 +88,7 @@ namespace JobImpound.Panels.Skill
             });
             panel.AddTabLine("Déverrouiller", async _ =>
             {
-                Vehicle vehicle = JobImpound.GetClosestVehicle(player);
+                Vehicle vehicle = JobImpound.GetClosestVehicle(player, new List<int> {JobImpound.TOWTRUCK_ID});
                 if(vehicle != null)
                 {
                     vehicle.NetworkisLocked = false;

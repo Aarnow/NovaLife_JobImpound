@@ -32,6 +32,7 @@ namespace JobImpound.Entities
         public string OwnerFullName { get; set; }
         public int ReasonId { get; set; }
         public string Evidence { get; set; }
+
         public string Status { get; set; }
         [Ignore]
         public VehicleStatus LStatus
@@ -39,6 +40,7 @@ namespace JobImpound.Entities
             get { return Enum.TryParse(Status, out VehicleStatus status) ? status : VehicleStatus.Immobilise; }
             set { Status = value.ToString(); }
         }
+
         public long CreatedAt { get; set; }
         public int CreatedBy { get; set; }
         public bool IsArchived { get; set; }

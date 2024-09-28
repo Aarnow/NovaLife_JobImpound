@@ -1,4 +1,5 @@
-﻿using JobImpound.Classes;
+﻿using FirstGearGames.Utilities.Networks;
+using JobImpound.Classes;
 using JobImpound.Entities;
 using JobImpound.Panels;
 using Life;
@@ -48,6 +49,7 @@ namespace JobImpound
 
             Orm.RegisterTable<JobImpound_Vehicle>();
             Orm.RegisterTable<JobImpound_Reason>();
+            Orm.RegisterTable<JobImpound_Certificate>();
 
             InsertMenu();
             ModKit.Internal.Logger.LogSuccess($"{PluginInformations.SourceName} v{PluginInformations.Version}", "initialisé");
@@ -91,14 +93,15 @@ namespace JobImpound
         #endregion
 
         #region UTILS
-        public static Vehicle GetClosestVehicle(Player player)
+        public static Vehicle GetClosestVehicle(Player player, List<int> exceptions = null)
         {
             Vehicle[] objectsOfType = UnityEngine.Object.FindObjectsOfType<Vehicle>();
+            if(exceptions == null) exceptions = new List<int>();
 
             foreach (Vehicle vehicle in objectsOfType)
             {
                 float distance = Vector3.Distance(player.setup.transform.position, vehicle.transform.position);
-                if (distance < JobImpound._jobImpoundConfig.MaxDistance && Nova.v.GetVehicle(vehicle.vehicleDbId).modelId != JobImpound.TOWTRUCK_ID)
+                if (distance < _jobImpoundConfig.MaxDistance && !exceptions.Any(e => e == Nova.v.GetVehicle(vehicle.vehicleDbId).modelId))
                 {
                     return vehicle;
                 }
@@ -116,17 +119,60 @@ namespace JobImpound
                 ImpoundPanelsManager.AdminPanels.JobImpoundPanel(player);
             });
 
-            /*_menu.AddBizTabLine(PluginInformations, new List<Activity.Type> { Activity.Type.LawEnforcement }, null, $"{mk.Color("[Fourrière] proximité", mk.Colors.Purple)}", (ui) =>
+            _menu.AddDocumentTabLine(PluginInformations, "Cartes grises", (ui) =>
             {
                 Player player = PanelHelper.ReturnPlayerFromPanel(ui);
                 //code
-            }, 2);*/
+            });
 
-            _menu.AddBizTabLine(PluginInformations, new List<Activity.Type> { Activity.Type.Fourriere }, null, $"{mk.Color("proximité", mk.Colors.Info)}", (ui) =>
+            _menu.AddBizTabLine(PluginInformations, new List<Activity.Type> { Activity.Type.LawEnforcement }, null, $"{mk.Color($"Proximité {mk.Italic("[fourrière]")}", mk.Colors.Purple)}", (ui) =>
+            {
+                Player player = PanelHelper.ReturnPlayerFromPanel(ui);
+                //code
+            }, 2);
+
+            _menu.AddBizTabLine(PluginInformations, new List<Activity.Type> { Activity.Type.LawEnforcement }, null, "Contrôler la carte grise", (ui) =>
+            {
+                Player player = PanelHelper.ReturnPlayerFromPanel(ui);
+                //code
+            });
+
+            _menu.AddBizTabLine(PluginInformations, new List<Activity.Type> { Activity.Type.Mecanic }, null, $"Délivrer une carte grise", async (ui) =>
+            {
+                Player player = PanelHelper.ReturnPlayerFromPanel(ui);
+                Player target = player.GetClosestPlayer();
+                Vehicle vehicle = GetClosestVehicle(player);
+
+                if(player.setup.areaId == player.biz.TerrainId)
+                {
+                    if (target != null)
+                    {
+                        if (vehicle != null)
+                        {
+                            var vehicleInfo = Nova.v.GetVehicle(vehicle.vehicleDbId);
+                            if(vehicleInfo != null && vehicleInfo.permissions.owner.characterId == target.character.Id)
+                            {
+                                List<JobImpound_Certificate> certificates = await JobImpound_Certificate.Query(c => c.Plate == vehicle.plate);
+                                if (certificates != null && certificates.Count > 0)
+                                {
+                                    //code
+                                }
+                                else player.Notify("Carte Grise", $"Ce véhicule possède déjà une carte grise", NotificationManager.Type.Info);
+                            }
+                            else player.Notify("Carte Grise", $"Ce véhicule n'appartient pas à {target.GetFullName()}", NotificationManager.Type.Info);
+                        }
+                        else player.Notify("Carte Grise", $"Aucun véhicule n'est à proximité", NotificationManager.Type.Info);
+                    }
+                    else player.Notify("Carte Grise", $"Aucun citoyen n'est à proximité", NotificationManager.Type.Info);
+                }
+                else player.Notify("Carte Grise", $"Vous ne pouvez délivrer une carte grise qu'en étant sur le terrain de votre société", NotificationManager.Type.Info);
+            });
+
+            _menu.AddBizTabLine(PluginInformations, new List<Activity.Type> { Activity.Type.Fourriere }, null, $"{mk.Color("Proximité", mk.Colors.Info)}", (ui) =>
             {
                 Player player = PanelHelper.ReturnPlayerFromPanel(ui);
                 ImpoundPanelsManager.ImpoundProximityPanel(player);
-            }, 2);
+            }, 1);
 
             _menu.AddBizTabLine(PluginInformations, new List<Activity.Type> { Activity.Type.Fourriere, Activity.Type.Mecanic }, null, "Dépannage", (ui) =>
             {
@@ -138,48 +184,53 @@ namespace JobImpound
             {
                 Player player = PanelHelper.ReturnPlayerFromPanel(ui);
 
-                Vehicle vehicle = GetClosestVehicle(player);
-            if (vehicle != null)
+                if (player.setup.areaId == player.biz.TerrainId)
                 {
-                    var vehicleInfo = Nova.v.GetVehicle(vehicle.vehicleDbId);
-
-                    string immobiliseStatus = VehicleStatus.Immobilise.ToString();
-                    string nonReclameStatus = VehicleStatus.NonReclame.ToString();
-                    List<JobImpound_Vehicle> vehicles = await JobImpound_Vehicle.Query(v => v.Status == immobiliseStatus || v.Status == nonReclameStatus);
-
-                    if (vehicles.Any(v => v.VehicleId == vehicle.vehicleDbId))
+                    Vehicle vehicle = GetClosestVehicle(player, new List<int> { JobImpound.TOWTRUCK_ID });
+                    if (vehicle != null)
                     {
-                        player.Notify("Fourrière", "Ce véhicule est déjà immobilisé", NotificationManager.Type.Info);
-                    }
-                    else
-                    {
-                        JobImpound_Vehicle newVehicle = new JobImpound_Vehicle();
-                        newVehicle.VehicleId = vehicle.vehicleDbId;
-                        newVehicle.ModelId = vehicleInfo.modelId;
-                        newVehicle.Plate = vehicle.plate;
-                        newVehicle.BizId = vehicle.bizId;
+                        var vehicleInfo = Nova.v.GetVehicle(vehicle.vehicleDbId);
 
-                        var biz = Nova.biz.FetchBiz(vehicle.bizId);
-                        if (Nova.biz.FetchBiz(vehicle.bizId) != null) newVehicle.BizName = biz.BizName;
+                        string immobiliseStatus = VehicleStatus.Immobilise.ToString();
+                        string nonReclameStatus = VehicleStatus.NonReclame.ToString();
+                        List<JobImpound_Vehicle> vehicles = await JobImpound_Vehicle.Query(v => v.Status == immobiliseStatus || v.Status == nonReclameStatus);
 
-                        if(vehicleInfo != null)
+                        if (vehicles.Any(v => v.VehicleId == vehicle.vehicleDbId))
                         {
-                            var owner = await LifeDB.db.Table<Characters>().Where(c => c.Id == vehicleInfo.permissions.owner.characterId).FirstOrDefaultAsync();
-
-                            if (owner != null)
-                            {
-                                Console.WriteLine("owner: " + owner != null);
-
-                                newVehicle.OwnerId = owner.Id;
-                                newVehicle.OwnerFullName = owner.Firstname+" "+owner.Lastname;
-                            }
+                            player.Notify("Fourrière", "Ce véhicule est déjà immobilisé", NotificationManager.Type.Info);
                         }
-                        
-                        newVehicle.LStatus = VehicleStatus.Immobilise;
+                        else
+                        {
+                            JobImpound_Vehicle newVehicle = new JobImpound_Vehicle();
+                            newVehicle.VehicleId = vehicle.vehicleDbId;
+                            newVehicle.ModelId = vehicleInfo.modelId;
+                            newVehicle.Plate = vehicle.plate;
+                            newVehicle.BizId = vehicle.bizId;
 
-                        ImpoundPanelsManager.SkillPanels.ImmobiliseVehicleReasonPanel(player, newVehicle);
+                            var biz = Nova.biz.FetchBiz(vehicle.bizId);
+                            if (Nova.biz.FetchBiz(vehicle.bizId) != null) newVehicle.BizName = biz.BizName;
+
+                            if (vehicleInfo != null)
+                            {
+                                var owner = await LifeDB.db.Table<Characters>().Where(c => c.Id == vehicleInfo.permissions.owner.characterId).FirstOrDefaultAsync();
+
+                                if (owner != null)
+                                {
+                                    Console.WriteLine("owner: " + owner != null);
+
+                                    newVehicle.OwnerId = owner.Id;
+                                    newVehicle.OwnerFullName = owner.Firstname + " " + owner.Lastname;
+                                }
+                            }
+
+                            newVehicle.LStatus = VehicleStatus.Immobilise;
+
+                            ImpoundPanelsManager.SkillPanels.ImmobiliseVehicleReasonPanel(player, newVehicle);
+                        }
                     }
-                } else player.Notify("Dépannage", $"Aucun véhicule à proximité", NotificationManager.Type.Info);
+                    else player.Notify("Fourrière", $"Aucun véhicule à proximité", NotificationManager.Type.Info);
+                }
+                else player.Notify("Fourrière", $"Vous ne pouvez immobilser un véhicule qu'en étant sur le terrain de votre société", NotificationManager.Type.Info);
             });
 
         }

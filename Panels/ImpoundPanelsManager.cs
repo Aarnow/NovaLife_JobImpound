@@ -12,7 +12,7 @@ namespace JobImpound.Panels
 {
     public class ImpoundPanelsManager
     {
-        public SkillPanels SkillPanels;
+        public ImpoundSkillPanels SkillPanels;
         public AdminPanels AdminPanels;
         public ImpoundPanels ImpoundPanels;
 
@@ -21,7 +21,7 @@ namespace JobImpound.Panels
         public ImpoundPanelsManager(ModKit.ModKit context)
         {
             Context = context;
-            SkillPanels = new SkillPanels(context);
+            SkillPanels = new ImpoundSkillPanels(context);
             AdminPanels = new AdminPanels(context);
             ImpoundPanels = new ImpoundPanels(context);
         }
