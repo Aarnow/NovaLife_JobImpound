@@ -10,6 +10,7 @@ using Life.Network;
 using Life.VehicleSystem;
 using ModKit.Helper;
 using ModKit.Interfaces;
+using ModKit.Utils;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -18,7 +19,6 @@ using System.Linq;
 using UnityEngine;
 using static JobImpound.Entities.JobImpound_Vehicle;
 using _menu = AAMenu.Menu;
-using mk = ModKit.Helper.TextFormattingHelper;
 
 namespace JobImpound
 {
@@ -33,11 +33,11 @@ namespace JobImpound
         public const int TOWTRUCK_ID = 12;
 
         public static Dictionary<uint, Coroutine> activeCoroutines = new Dictionary<uint, Coroutine>();
-        public ImpoundPanelsManager ImpoundPanelsManager;
+        public PanelsManager PanelsManager;
 
         public JobImpound(IGameAPI api) : base(api)
         {
-            ImpoundPanelsManager = new ImpoundPanelsManager(this);
+            PanelsManager = new PanelsManager(this);
             PluginInformations = new PluginInformations(AssemblyHelper.GetName(), "1.0.0", "Aarnow");
         }
 
@@ -91,52 +91,38 @@ namespace JobImpound
         }
         #endregion
 
-        #region UTILS
-        public static Vehicle GetClosestVehicle(Player player, List<int> exceptions = null)
-        {
-            Vehicle[] objectsOfType = UnityEngine.Object.FindObjectsOfType<Vehicle>();
-            if(exceptions == null) exceptions = new List<int>();
-
-            foreach (Vehicle vehicle in objectsOfType)
-            {
-                float distance = Vector3.Distance(player.setup.transform.position, vehicle.transform.position);
-                if (distance < _jobImpoundConfig.MaxDistance && !exceptions.Any(e => e == Nova.v.GetVehicle(vehicle.vehicleDbId).modelId))
-                {
-                    return vehicle;
-                }
-            }
-
-            return null;
-        }
-        #endregion
-
         public void InsertMenu()
         {
             _menu.AddAdminTabLine(PluginInformations, 5, "JobImpound", (ui) =>
             {
                 Player player = PanelHelper.ReturnPlayerFromPanel(ui);
-                ImpoundPanelsManager.AdminPanels.JobImpoundPanel(player);
+                PanelsManager.AdminPanels.JobImpoundPanel(player);
             });
 
             #region LAW ENFORCEMENT SKILLS
-            _menu.AddBizTabLine(PluginInformations, new List<Activity.Type> { Activity.Type.LawEnforcement }, null, $"{mk.Color($"Proximité {mk.Italic("[fourrière]")}", mk.Colors.Purple)}", (ui) =>
+            _menu.AddProximityBizTabLine(PluginInformations, new List<Activity.Type> { Activity.Type.LawEnforcement }, null, 1199, "Consulter la fourrière", (ui) =>
             {
                 Player player = PanelHelper.ReturnPlayerFromPanel(ui);
                 //code
-            }, 2);
+            });
             #endregion
 
             #region IMPOUND SKILLS
-            _menu.AddBizTabLine(PluginInformations, new List<Activity.Type> { Activity.Type.Fourriere }, null, $"{mk.Color("Proximité", mk.Colors.Info)}", (ui) =>
+            _menu.AddProximityBizTabLine(PluginInformations, new List<Activity.Type> { Activity.Type.Fourriere }, null, 1199, "Consulter l'ordinateur", (ui) =>
             {
                 Player player = PanelHelper.ReturnPlayerFromPanel(ui);
-                ImpoundPanelsManager.ImpoundProximityPanel(player);
-            }, 1);
+
+                if (player.HasBiz() && player.setup.areaId == player.biz.TerrainId)
+                {
+                    PanelsManager.ImpoundComputerPanel(player);
+                }
+                else player.Notify("Ordinateur", "Vous n'avez pas accès à cette ordinateur", NotificationManager.Type.Info);
+            });
 
             _menu.AddBizTabLine(PluginInformations, new List<Activity.Type> { Activity.Type.Fourriere, Activity.Type.Mecanic }, null, "Dépannage", (ui) =>
             {
                 Player player = PanelHelper.ReturnPlayerFromPanel(ui);
-                ImpoundPanelsManager.ImpoundSkillPanels.TroubleshootingPanel(player);
+                PanelsManager.ImpoundSkillPanels.TroubleshootingPanel(player);
             });
 
             _menu.AddBizTabLine(PluginInformations, new List<Activity.Type> { Activity.Type.Fourriere }, null, "Immobiliser un véhicule", async (ui) =>
@@ -145,7 +131,7 @@ namespace JobImpound
 
                 if (player.setup.areaId == player.biz.TerrainId)
                 {
-                    Vehicle vehicle = GetClosestVehicle(player, new List<int> { TOWTRUCK_ID });
+                    Vehicle vehicle = VehicleUtils.GetClosestVehicle(player, 4, new List<int> { TOWTRUCK_ID });
                     if (vehicle != null)
                     {
                         var vehicleInfo = Nova.v.GetVehicle(vehicle.vehicleDbId);
@@ -164,27 +150,9 @@ namespace JobImpound
                             newVehicle.VehicleId = vehicle.vehicleDbId;
                             newVehicle.ModelId = vehicleInfo.modelId;
                             newVehicle.Plate = vehicle.plate;
-                            newVehicle.BizId = vehicle.bizId;
-
-                            var biz = Nova.biz.FetchBiz(vehicle.bizId);
-                            if (Nova.biz.FetchBiz(vehicle.bizId) != null) newVehicle.BizName = biz.BizName;
-
-                            if (vehicleInfo != null)
-                            {
-                                var owner = await LifeDB.db.Table<Characters>().Where(c => c.Id == vehicleInfo.permissions.owner.characterId).FirstOrDefaultAsync();
-
-                                if (owner != null)
-                                {
-                                    Console.WriteLine("owner: " + owner != null);
-
-                                    newVehicle.OwnerId = owner.Id;
-                                    newVehicle.OwnerFullName = owner.Firstname + " " + owner.Lastname;
-                                }
-                            }
-
                             newVehicle.LStatus = VehicleStatus.Immobilise;
 
-                            ImpoundPanelsManager.ImpoundSkillPanels.ImmobiliseVehicleReasonPanel(player, newVehicle);
+                            PanelsManager.ImpoundSkillPanels.ImmobiliseVehicleReasonPanel(player, newVehicle);
                         }
                     }
                     else player.Notify("Fourrière", $"Aucun véhicule à proximité", NotificationManager.Type.Info);

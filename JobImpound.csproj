@@ -69,8 +69,9 @@
     <Compile Include="Entities\JobImpound_Vehicle.cs" />
     <Compile Include="JobImpound.cs" />
     <Compile Include="Panels\Admin\AdminPanels.cs" />
-    <Compile Include="Panels\ImpoundPanelsManager.cs" />
-    <Compile Include="Panels\Impound\ImpoundPanels.cs" />
+    <Compile Include="Panels\Impound\ReasonPanels.cs" />
+    <Compile Include="Panels\PanelsManager.cs" />
+    <Compile Include="Panels\Impound\VehiclePanels.cs" />
     <Compile Include="Panels\Skill\ImpoundSkillPanels.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

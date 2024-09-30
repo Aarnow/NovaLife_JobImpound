@@ -1,6 +1,9 @@
 ﻿using SQLite;
 using ModKit.Utils;
 using System;
+using mk = ModKit.Helper.TextFormattingHelper;
+using Life.VehicleSystem;
+using System.Threading.Tasks;
 
 namespace JobImpound.Entities
 {
@@ -26,10 +29,6 @@ namespace JobImpound.Entities
         public int VehicleId { get; set; }
         public int ModelId { get; set; }
         public string Plate { get; set; }
-        public int BizId { get; set; }
-        public string BizName { get; set; }
-        public int OwnerId { get; set; }
-        public string OwnerFullName { get; set; }
         public int ReasonId { get; set; }
         public string Evidence { get; set; }
 
@@ -42,12 +41,60 @@ namespace JobImpound.Entities
         }
 
         public long CreatedAt { get; set; }
-        public int CreatedBy { get; set; }
-        public bool IsArchived { get; set; }
-        public int ArchivedBy { get; set; }
+        public string CreatedBy { get; set; }
+        public long ReleasedAt { get; set; }
+        public string ReleasedBy { get; set; }
 
         public JobImpound_Vehicle()
         {
+        }
+
+
+        public async Task UpdateStatus()
+        {
+            if (LStatus == VehicleStatus.Immobilise && DateUtils.IsGreater(CreatedAt, 60 * JobImpound._jobImpoundConfig.MaximumDowntimeInMinute))
+            {
+                LStatus = VehicleStatus.NonReclame;
+                await Save();
+            }
+        }
+
+        public mk.Colors ReturnColorOfStatus()
+        {
+            mk.Colors color = mk.Colors.Verbose;
+            switch (LStatus)
+            {
+                case VehicleStatus.Immobilise:
+                    color = mk.Colors.Warning;
+                    break;
+                case VehicleStatus.Libere:
+                    color = mk.Colors.Success;
+                    break;
+                case VehicleStatus.NonReclame:
+                    color = mk.Colors.Error;
+                    break;
+                case VehicleStatus.Recycle:
+                    color = mk.Colors.Info;
+                    break;
+                case VehicleStatus.Vendu:
+                    color = mk.Colors.Purple;
+                    break;
+                case VehicleStatus.Saisi:
+                    color = mk.Colors.Orange;
+                    break;
+                default:
+                    color = mk.Colors.Verbose;
+                    break;
+            }
+            return color;
+        }
+
+        public double GetAmountOfStorage()
+        {
+            long time = DateUtils.GetCurrentTime() - CreatedAt;
+            int hours = (int)Math.Ceiling((double)time / 3600);
+
+            return JobImpound._jobImpoundConfig.StorageCostsPerHour * hours;
         }
     }
 }

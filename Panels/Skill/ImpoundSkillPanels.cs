@@ -60,7 +60,7 @@ namespace JobImpound.Panels.Skill
             {
                 if (player.setup.driver.NetworkcurrentVehicle != 0 && player.setup.driver.seatId == 0)
                 {
-                    Vehicle[] allVehicles = UnityEngine.Object.FindObjectsOfType<Vehicle>();
+                    Vehicle[] allVehicles = Object.FindObjectsOfType<Vehicle>();
                     bool towTruckNearby = false;
                     foreach (var vehicle in allVehicles.Where(v => v.bizId == player.biz.Id))
                     {
@@ -88,7 +88,7 @@ namespace JobImpound.Panels.Skill
             });
             panel.AddTabLine("Déverrouiller", async _ =>
             {
-                Vehicle vehicle = JobImpound.GetClosestVehicle(player, new List<int> {JobImpound.TOWTRUCK_ID});
+                Vehicle vehicle = VehicleUtils.GetClosestVehicle(player, 4,new List<int> {JobImpound.TOWTRUCK_ID});
                 if(vehicle != null)
                 {
                     vehicle.NetworkisLocked = false;
@@ -149,7 +149,7 @@ namespace JobImpound.Panels.Skill
             {
                 vehicle.Evidence = panel.inputText;
                 vehicle.CreatedAt = DateUtils.GetCurrentTime();
-                vehicle.CreatedBy = player.character.Id;
+                vehicle.CreatedBy = player.GetFullName();
                 if (await vehicle.Save())
                 {
                     player.Notify("Fourrière", "Immobilisation enregistré", NotificationManager.Type.Success);
