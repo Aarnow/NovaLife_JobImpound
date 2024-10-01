@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using Life.Network;
 using Life.UI;
 using mk = ModKit.Helper.TextFormattingHelper;
+using Life;
 
 namespace JobImpound.Panels.LawEnforcement
 {
@@ -25,7 +26,8 @@ namespace JobImpound.Panels.LawEnforcement
             List<JobImpound_Vehicle> vehicles;
             string immobiliseStatus = VehicleStatus.Immobilise.ToString();
             string nonReclameStatus = VehicleStatus.NonReclame.ToString();
-            vehicles = await JobImpound_Vehicle.Query(v => v.Status == immobiliseStatus || v.Status == nonReclameStatus);
+            string saisiStatus = VehicleStatus.Saisi.ToString();
+            vehicles = await JobImpound_Vehicle.Query(v => v.Status == immobiliseStatus || v.Status == nonReclameStatus || v.Status == saisiStatus);
 
             //Déclaration
             Panel panel = Context.PanelHelper.Create($"Central - Véhicules à la fourrière", UIPanel.PanelType.TabPrice, player, () => SnippetVehiclePanel(player));
@@ -58,13 +60,13 @@ namespace JobImpound.Panels.LawEnforcement
             panel.Display();
         }
 
-        public async void SnippetVehicleDetailsPanel(Player player, JobImpound_Vehicle vehicle)
+        public async void SnippetVehicleDetailsPanel(Player player, JobImpound_Vehicle vehicle, bool isLocked = false, bool isFree = false)
         {
             //Query
             List<JobImpound_Reason> reason = await JobImpound_Reason.Query(r => r.Id == vehicle.ReasonId);
 
             //Déclaration
-            Panel panel = Context.PanelHelper.Create($"Central - détails d'un véhicule à la fourrière", UIPanel.PanelType.TabPrice, player, () => SnippetVehicleDetailsPanel(player, vehicle));
+            Panel panel = Context.PanelHelper.Create($"Central - détails d'un véhicule à la fourrière", UIPanel.PanelType.TabPrice, player, () => SnippetVehicleDetailsPanel(player, vehicle, isLocked, isFree));
 
             //Corps
             panel.AddTabLine($"{mk.Color("Modèle:", mk.Colors.Info)} {VehicleUtils.GetModelNameByModelId(vehicle.ModelId)}", "", VehicleUtils.GetIconId(vehicle.ModelId), _ => {});
@@ -74,6 +76,37 @@ namespace JobImpound.Panels.LawEnforcement
             panel.AddTabLine($"{mk.Color("Statut:", mk.Colors.Info)} {EnumUtils.GetDisplayName(vehicle.LStatus)}", _ =>{});
 
             //Boutons
+            if (vehicle.LStatus != VehicleStatus.Saisi && !isLocked) panel.NextButton("Saisir", () => SnippetVehicleDetailsPanel(player, vehicle, true, false));
+            else if(vehicle.LStatus != VehicleStatus.Saisi && isLocked) panel.PreviousButtonWithAction($"{mk.Size("Confirmer la<br>saisie", 12)}", async () =>
+            {
+                vehicle.LStatus = VehicleStatus.Saisi;
+                if (await vehicle.Save())
+                {
+                    player.Notify("Central", "Modification enregistrée", NotificationManager.Type.Success);
+                    return true;
+                }
+                else player.Notify("Central", "Nous n'avons pas pu enregistrer cette modification", NotificationManager.Type.Error);
+                return false;
+            });
+
+            if (vehicle.LStatus == VehicleStatus.Saisi && !isFree) panel.NextButton("Libérer", () => SnippetVehicleDetailsPanel(player, vehicle, false, true));
+            else if(vehicle.LStatus == VehicleStatus.Saisi && isFree)
+            {               
+                panel.PreviousButtonWithAction($"{mk.Size("Confirmer la<br>libération", 12)}", async () =>
+                {
+                    vehicle.LStatus = VehicleStatus.Immobilise;
+                    await vehicle.UpdateStatus();
+
+                    if (await vehicle.Save())
+                    {
+                        player.Notify("Central", "Modification enregistrée", NotificationManager.Type.Success);
+                        return true;
+                    }
+                    else player.Notify("Central", "Nous n'avons pas pu enregistrer cette modification", NotificationManager.Type.Error);
+                    return false;
+                });
+            }
+
             panel.PreviousButton();
             panel.CloseButton();
 

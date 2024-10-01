@@ -7,6 +7,7 @@ using ModKit.Helper;
 using ModKit.Utils;
 using SQLite;
 using System.Collections.Generic;
+using static JobImpound.Entities.JobImpound_Vehicle;
 using mk = ModKit.Helper.TextFormattingHelper;
 
 namespace JobImpound.Panels.Impound
@@ -57,13 +58,13 @@ namespace JobImpound.Panels.Impound
             panel.Display();
         }
 
-        public async void ReasonDetailsPanel(Player player, JobImpound_Reason reason)
+        public async void ReasonDetailsPanel(Player player, JobImpound_Reason reason, bool isDelete = false)
         {
             //Query
             Characters createdBy = await LifeDB.db.Table<Characters>().Where(c => c.Id == reason.CreatedBy).FirstOrDefaultAsync();
 
             //Déclaration
-            Panel panel = Context.PanelHelper.Create("Fourrière - Ajout d'une nouvelle infraction", UIPanel.PanelType.TabPrice, player, () => ReasonDetailsPanel(player, reason));
+            Panel panel = Context.PanelHelper.Create("Fourrière - Ajout d'une nouvelle infraction", UIPanel.PanelType.TabPrice, player, () => ReasonDetailsPanel(player, reason, isDelete));
 
             //Corps
             panel.AddTabLine($"{mk.Color("Titre:", mk.Colors.Info)} {(reason.Title != null ? $"{reason.Title}" : "à définir")}", _ => SetReasonTitle(player, reason));
@@ -76,18 +77,35 @@ namespace JobImpound.Panels.Impound
 
                 panel.AddTabLine($"{mk.Color("Créer le:", mk.Colors.Orange)} {(reason.CreatedAt != default ? DateUtils.FormatUnixTimestamp(reason.CreatedAt) : "-")}", _ =>
                 {
-                    player.Notify("Central", "Vous ne pouvez pas modifier cette valeur", NotificationManager.Type.Info);
+                    player.Notify("Fourrière", "Vous ne pouvez pas modifier cette valeur", NotificationManager.Type.Info);
                     panel.Refresh();
                 });
                 panel.AddTabLine($"{mk.Color("Créer par:", mk.Colors.Orange)} {(reason.CreatedBy != default ? $"{createdBy.Firstname} {createdBy.Lastname}" : "-")}", _ =>
                 {
-                    player.Notify("Central", "Vous ne pouvez pas modifier cette valeur", NotificationManager.Type.Info);
+                    player.Notify("Fourrière", "Vous ne pouvez pas modifier cette valeur", NotificationManager.Type.Info);
                     panel.Refresh();
                 });
             }
 
             //Boutons
             panel.NextButton("Modifier", () => panel.SelectTab());
+            if (!isDelete) panel.NextButton("Supprimer", () => ReasonDetailsPanel(player, reason, true));
+            else panel.PreviousButtonWithAction($"{mk.Size("Confirmer la<br>suppression", 12)}", async () =>
+            {
+                var query = await JobImpound_Vehicle.Query(q => q.ReasonId == reason.Id);
+                if(query == null || query.Count == 0)
+                {
+                    if (await reason.Delete())
+                    {
+                        player.Notify("Fourrière", "suppression enregistrée", NotificationManager.Type.Success);
+                        return true;
+                    }
+                    else player.Notify("Fourrière", "Nous n'avons pas pu supprimer cette infraction", NotificationManager.Type.Error);
+                }
+                else player.Notify("Fourrière", "Vous ne pouvez pas supprimer une infraction en cours d'utilisation", NotificationManager.Type.Warning);
+
+                return false;
+            });
             panel.PreviousButton();
             panel.CloseButton();
 

@@ -16,6 +16,8 @@ using System.Linq;
 using UnityEngine;
 using static JobImpound.Entities.JobImpound_Vehicle;
 using _menu = AAMenu.Menu;
+using mk = ModKit.Helper.TextFormattingHelper;
+
 
 namespace JobImpound
 {
@@ -97,7 +99,7 @@ namespace JobImpound
             });
 
             #region LAW ENFORCEMENT SKILLS
-            _menu.AddProximityBizTabLine(PluginInformations, new List<Activity.Type> { Activity.Type.LawEnforcement }, null, 1199, "Consulter la fourrière", (ui) =>
+            _menu.AddProximityBizTabLine(PluginInformations, new List<Activity.Type> { Activity.Type.LawEnforcement }, null, 1199, $"{mk.Color("Parc de la fourrière", mk.Colors.Purple)}", (ui) =>
             {
                 Player player = PanelHelper.ReturnPlayerFromPanel(ui);
                 PanelsManager.SnippetVehiclePanels.SnippetVehiclePanel(player);
