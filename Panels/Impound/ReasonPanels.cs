@@ -70,8 +70,9 @@ namespace JobImpound.Panels.Impound
 
             if (reason.Title != null)
             {
+
                 panel.AddTabLine($"{mk.Color("Montant de l'amende:", mk.Colors.Info)}  {reason.Money}€", _ => SetReasonMoney(player, reason));
-                panel.AddTabLine($"{mk.Color("Icône:", mk.Colors.Info)}  [{reason.IconItem}] {ItemUtils.GetItemById(reason.IconItem).itemName}","", reason.IconItem != default ? ItemUtils.GetIconIdByItemId(reason.IconItem) : IconUtils.Others.None.Id, _ => SetReasonIcon(player, reason));
+                panel.AddTabLine($"{mk.Color("Icône:", mk.Colors.Info)}  [{reason.IconItem}] {ItemUtils.GetItemById(reason.IconItem)?.itemName}","", reason.IconItem != default ? ItemUtils.GetIconIdByItemId(reason.IconItem) : IconUtils.Others.None.Id, _ => SetReasonIcon(player, reason));
 
                 panel.AddTabLine($"{mk.Color("Créer le:", mk.Colors.Orange)} {(reason.CreatedAt != default ? DateUtils.FormatUnixTimestamp(reason.CreatedAt) : "-")}", _ =>
                 {

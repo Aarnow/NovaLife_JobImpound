@@ -1,5 +1,7 @@
-﻿using JobImpound.Entities;
+﻿using Crosstales.Radio;
+using JobImpound.Entities;
 using Life;
+using Life.BizSystem;
 using Life.DB;
 using Life.Network;
 using Life.UI;
@@ -12,8 +14,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using static JobImpound.Entities.JobImpound_Vehicle;
-using static UnityEngine.GraphicsBuffer;
 using mk = ModKit.Helper.TextFormattingHelper;
+using MK = ModKit.Helper.VehicleHelper.Classes;
 
 namespace JobImpound.Panels.Impound
 {
@@ -29,15 +31,18 @@ namespace JobImpound.Panels.Impound
         public async void VehiclePanel(Player player, bool isInPound = true)
         {
             //Query
+            List<JobImpound_Vehicle> vehicles;
             string immobiliseStatus = VehicleStatus.Immobilise.ToString();
             string nonReclameStatus = VehicleStatus.NonReclame.ToString();
-            List<JobImpound_Vehicle> vehicles = await JobImpound_Vehicle.Query(v => isInPound ? v.Status == immobiliseStatus || v.Status == nonReclameStatus : !(v.Status == immobiliseStatus || v.Status == nonReclameStatus));
+            if (isInPound) vehicles = await JobImpound_Vehicle.Query(v => v.Status == immobiliseStatus || v.Status == nonReclameStatus);
+            else vehicles = await JobImpound_Vehicle.Query(v => v.Status != immobiliseStatus && v.Status != nonReclameStatus);
+            
 
             //Déclaration
-            Panel panel = Context.PanelHelper.Create($"Fourrière - Véhicules disponibles", UIPanel.PanelType.TabPrice, player, () => VehiclePanel(player));
+            Panel panel = Context.PanelHelper.Create($"Fourrière - Véhicules disponibles", UIPanel.PanelType.TabPrice, player, () => VehiclePanel(player, isInPound));
 
             //Corps
-            if (vehicles.Any())
+            if (vehicles != null && vehicles.Count > 0)
             {
                 foreach (var vehicle in vehicles)
                 {
@@ -64,6 +69,7 @@ namespace JobImpound.Panels.Impound
         {
             //Query
             List<JobImpound_Reason> reason = await JobImpound_Reason.Query(r => r.Id == vehicle.ReasonId);
+            List<MK.Vehicle> mk_vehicles = await MK.Vehicle.Query(v => v.ModelId == vehicle.ModelId);
 
             //Déclaration
             Panel panel = Context.PanelHelper.Create($"Fourrière - détails du véhicule", UIPanel.PanelType.TabPrice, player, () => VehicleDetailsPanel(player, vehicle));
@@ -100,7 +106,7 @@ namespace JobImpound.Panels.Impound
 
             if(vehicle.LStatus != VehicleStatus.Immobilise && vehicle.LStatus != VehicleStatus.NonReclame)
             {
-                panel.AddTabLine($"{mk.Color("Libéré le:", mk.Colors.Orange)} {(vehicle.ReleasedAt != default ? DateUtils.FormatUnixTimestamp(vehicle.CreatedAt) : "-")}", _ =>
+                panel.AddTabLine($"{mk.Color("Libéré le:", mk.Colors.Orange)} {(vehicle.ReleasedAt != default ? DateUtils.FormatUnixTimestamp(vehicle.ReleasedAt) : "-")}", _ =>
                 {
                     player.Notify("Central", "Vous ne pouvez pas modifier cette valeur", NotificationManager.Type.Info);
                     panel.Refresh();
@@ -130,7 +136,7 @@ namespace JobImpound.Panels.Impound
                             double amountOfStorage = vehicle.GetAmountOfStorage();
                             double total = amountOfStorage + JobImpound._jobImpoundConfig.TowingCosts + JobImpound._jobImpoundConfig.ImpoundAdministrativeCosts + reason[0].Money;
 
-                            VehicleRequestPanel(player, closestPlayer, vehicle, isBizOwner, reason[0], amountOfStorage, total);
+                            VehicleFineRequestPanel(player, closestPlayer, vehicle, isBizOwner, reason[0], amountOfStorage, total);
                             player.Notify("Fourrière", $"Vous tendez l'amende à {closestPlayer.GetFullName()}", NotificationManager.Type.Info);
                             return Task.FromResult(true);
                         }
@@ -141,11 +147,35 @@ namespace JobImpound.Panels.Impound
                     return Task.FromResult(false);
                 });
             }
-            if(vehicle.LStatus == VehicleStatus.NonReclame)
+            if(vehicle.LStatus == VehicleStatus.NonReclame && mk_vehicles != null && mk_vehicles.Count > 0)
             {
-                //vendre au garagiste
-                //argent pour la mairie
-                //commission - config
+                panel.CloseButtonWithAction($"{mk.Size($"Vendre<br>{mk_vehicles[0].Price}€", 14)}", async () =>
+                {
+                    Player closestPlayer = player.GetClosestPlayer();
+                    Bizs cityHall = Nova.biz.FetchBiz(JobImpound._jobImpoundConfig.CityHallId);
+
+                    if (cityHall != null)
+                    {
+                        if (closestPlayer != null)
+                        {
+                            if (closestPlayer.HasBiz() && Nova.biz.GetBizActivities(closestPlayer.biz.Id).First() == Activity.Type.Mecanic)
+                            {
+                                if (PermissionUtils.PlayerIsOwner(closestPlayer) || await PermissionUtils.PlayerCanManageTheBank(closestPlayer))
+                                {
+                                    VehicleSalesRequestPanel(player, closestPlayer, vehicle, mk_vehicles[0].Price);
+                                    player.Notify("Fourrière", $"Vous proposez l'offre de vente à la société {closestPlayer.biz.BizName}", NotificationManager.Type.Info);
+                                    return true;
+                                }
+                                else player.Notify("Fourrière", "Le citoyen à proximité n'a pas la permission d'acheter un véhicule pour sa société", NotificationManager.Type.Info);
+                            }
+                            else player.Notify("Fourrière", "Le citoyen à proximité n'est pas mécanicien", NotificationManager.Type.Info);
+                        }
+                        else player.Notify("Fourrière", "Aucun citoyen n'est à proximité", NotificationManager.Type.Warning);
+                    }
+                    else player.Notify("Fourrière", "La mairie n'est pas joignable", NotificationManager.Type.Warning);
+
+                    return false;
+                });
             }
             panel.PreviousButton();
             panel.CloseButton();
@@ -153,11 +183,10 @@ namespace JobImpound.Panels.Impound
             //Affichage
             panel.Display();
         }
-
-        public void VehicleRequestPanel(Player player, Player closestPlayer, JobImpound_Vehicle vehicle, bool isBizOwner, JobImpound_Reason reason, double amountOfStorage, double total)
+        public void VehicleFineRequestPanel(Player player, Player closestPlayer, JobImpound_Vehicle vehicle, bool isBizOwner, JobImpound_Reason reason, double amountOfStorage, double total)
         {
             //Déclaration
-            Panel panel = Context.PanelHelper.Create("Fourrière - Amende", UIPanel.PanelType.Text, closestPlayer, () => VehicleRequestPanel(player, closestPlayer, vehicle, isBizOwner, reason, amountOfStorage, total));
+            Panel panel = Context.PanelHelper.Create("Fourrière - Amende", UIPanel.PanelType.Text, closestPlayer, () => VehicleFineRequestPanel(player, closestPlayer, vehicle, isBizOwner, reason, amountOfStorage, total));
 
             //Corps
             panel.TextLines.Add($"{mk.Color($"{player.GetFullName()}", mk.Colors.Orange)}");
@@ -215,7 +244,76 @@ namespace JobImpound.Panels.Impound
             //Affichage
             panel.Display();
         }
+        public void VehicleSalesRequestPanel(Player player, Player closestPlayer, JobImpound_Vehicle vehicle, double price)
+        {
+            //Query
+            Bizs cityHall = Nova.biz.FetchBiz(JobImpound._jobImpoundConfig.CityHallId);
 
+            //Déclaration
+            Panel panel = Context.PanelHelper.Create("Fourrière - Vente d'un véhicule non réclamé", UIPanel.PanelType.Text, closestPlayer, () => VehicleSalesRequestPanel(player, closestPlayer, vehicle, price));
+
+            //Corps
+            panel.TextLines.Add($"{mk.Color($"{player.GetFullName()}", mk.Colors.Orange)}");
+            panel.TextLines.Add($"propose une {VehicleUtils.GetModelNameByModelId(vehicle.ModelId)}");
+            panel.TextLines.Add($"pour la somme de {mk.Color($"{price}", mk.Colors.Orange)}€");
+            panel.TextLines.Add($"{mk.Size($"{mk.Italic($"{mk.Color("(prix non-négociable)", mk.Colors.Grey)}")}", 14)}");
+
+            //Boutons
+            panel.CloseButtonWithAction("Accepter", async () =>
+            {
+                if (closestPlayer.biz.Bank >= price)
+                {
+                    vehicle.LStatus = VehicleStatus.Vendu;
+                    vehicle.ReleasedAt = DateUtils.GetCurrentTime();
+                    vehicle.ReleasedBy = player.GetFullName();
+
+                    if (await vehicle.Save())
+                    {
+
+                        double commission = price * (JobImpound._jobImpoundConfig.CommissionPercentage / 100);
+
+
+                        closestPlayer.biz.Bank -= price;
+                        closestPlayer.biz.Save();
+                        player.AddMoney(commission, "JFourrière - Vente d'un véhicule non-réclamé");
+                        cityHall.Bank += price - commission;
+                        cityHall.Save();
+
+                        LifeVehicle currentVehicle = Nova.v.GetVehicle(vehicle.VehicleId);
+                        currentVehicle.permissions.owner.characterId = 0;
+                        currentVehicle.bizId = closestPlayer.biz.Id;
+                        currentVehicle.Save();
+
+
+                        player.Notify("Fourrière", $"Vous avez vendu une {VehicleUtils.GetModelNameByModelId(vehicle.ModelId)} pour {price}€. Vous obtenez {commission}€ de commission.", NotificationManager.Type.Success);
+                        closestPlayer.Notify("Fourrière", $"Votre société vient d'acquérir une {VehicleUtils.GetModelNameByModelId(vehicle.ModelId)} pour {price}€.", NotificationManager.Type.Success);
+
+                        return true;
+                    }
+                    else
+                    {
+                        player.Notify("Fourrière", "Nous n'avons pas pu procéder à la vente", NotificationManager.Type.Error);
+                        closestPlayer.Notify("Fourrière", "Nous n'avons pas pu procéder à la vente", NotificationManager.Type.Error);
+                    }
+                }
+                else
+                {
+                    player.Notify("Fourrière", $"La société {player.biz.BizName} n'a pas les moyens d'acheter ce véhicule", NotificationManager.Type.Info);
+                    closestPlayer.Notify("Fourrière", "Votre société n'a pas les moyens d'acheter ce véhicule", NotificationManager.Type.Info);
+                }
+
+                return false;
+            });
+            panel.CloseButtonWithAction("Refuser", () =>
+            {
+                player.Notify("Fourrière", "Le citoyen refuse d'acheter ce véhicule", NotificationManager.Type.Info);
+                closestPlayer.Notify("Fourrière", "Vous refusez d'acheter ce véhicule", NotificationManager.Type.Info);
+                return Task.FromResult(true);
+            });
+
+            //Affichage
+            panel.Display();
+        }
         public void VehicleSearchPanel(Player player)
         {
             //Déclaration

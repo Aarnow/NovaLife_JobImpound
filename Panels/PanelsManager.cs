@@ -1,5 +1,6 @@
 ﻿using JobImpound.Panels.Admin;
 using JobImpound.Panels.Impound;
+using JobImpound.Panels.LawEnforcement;
 using JobImpound.Panels.Skill;
 using Life;
 using Life.Network;
@@ -16,6 +17,7 @@ namespace JobImpound.Panels
         public VehiclePanels VehiclePanels;
         public ImpoundSkillPanels ImpoundSkillPanels;
         public ReasonPanels ReasonPanels;
+        public SnippetVehiclePanels SnippetVehiclePanels;
 
         [Ignore] public ModKit.ModKit Context { get; set; }
 
@@ -26,6 +28,7 @@ namespace JobImpound.Panels
             VehiclePanels = new VehiclePanels(context);
             ImpoundSkillPanels = new ImpoundSkillPanels(context);
             ReasonPanels = new ReasonPanels(context);
+            SnippetVehiclePanels = new SnippetVehiclePanels(context);
         }
 
         public void ImpoundComputerPanel(Player player)

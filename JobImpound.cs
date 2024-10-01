@@ -1,18 +1,15 @@
-﻿using FirstGearGames.Utilities.Networks;
-using JobImpound.Classes;
+﻿using JobImpound.Classes;
 using JobImpound.Entities;
 using JobImpound.Panels;
+using JobImpound.Panels.LawEnforcement;
 using Life;
-using Life.AreaSystem;
 using Life.BizSystem;
-using Life.DB;
 using Life.Network;
 using Life.VehicleSystem;
 using ModKit.Helper;
 using ModKit.Interfaces;
 using ModKit.Utils;
 using Newtonsoft.Json;
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -103,8 +100,8 @@ namespace JobImpound
             _menu.AddProximityBizTabLine(PluginInformations, new List<Activity.Type> { Activity.Type.LawEnforcement }, null, 1199, "Consulter la fourrière", (ui) =>
             {
                 Player player = PanelHelper.ReturnPlayerFromPanel(ui);
-                //code
-            });
+                PanelsManager.SnippetVehiclePanels.SnippetVehiclePanel(player);
+            }, 101, null);
             #endregion
 
             #region IMPOUND SKILLS

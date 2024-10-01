@@ -120,7 +120,7 @@ namespace JobImpound.Panels.Skill
             //Corps
             foreach (var reason in query)
             {
-                panel.AddTabLine($"{reason.Title}", _ =>
+                panel.AddTabLine($"{reason.Title}", $"{reason.Money}", reason.IconItem != default ? ItemUtils.GetIconIdByItemId(reason.IconItem) : IconUtils.Others.None.Id, _ =>
                 {
                     vehicle.ReasonId = reason.Id;
                     ImmobiliseVehicleEvidencePanel(player, vehicle);

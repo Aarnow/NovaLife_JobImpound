@@ -70,6 +70,7 @@
     <Compile Include="JobImpound.cs" />
     <Compile Include="Panels\Admin\AdminPanels.cs" />
     <Compile Include="Panels\Impound\ReasonPanels.cs" />
+    <Compile Include="Panels\LawEnforcement\SnippetVehiclePanels.cs" />
     <Compile Include="Panels\PanelsManager.cs" />
     <Compile Include="Panels\Impound\VehiclePanels.cs" />
     <Compile Include="Panels\Skill\ImpoundSkillPanels.cs" />
