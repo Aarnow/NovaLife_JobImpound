@@ -194,9 +194,9 @@ namespace JobImpound.Panels.Impound
             panel.TextLines.Add($"du véhicule immatriculé {mk.Color($"{vehicle.Plate}", mk.Colors.Orange)}");
             panel.TextLines.Add($"pour la somme de {mk.Color($"{total}", mk.Colors.Orange)}€");
             panel.TextLines.Add($"{mk.Size($"{mk.Italic($"{mk.Color($"{reason.Title} - {reason.Money}€", mk.Colors.Grey)}")}", 14)}");
-            panel.TextLines.Add($"{mk.Size($"{mk.Italic($"{mk.Color($"Coûts de remorquage - {amountOfStorage}€", mk.Colors.Grey)}")}", 14)}");
+            panel.TextLines.Add($"{mk.Size($"{mk.Italic($"{mk.Color($"Coûts de remorquage - {JobImpound._jobImpoundConfig.TowingCosts}€", mk.Colors.Grey)}")}", 14)}");
             panel.TextLines.Add($"{mk.Size($"{mk.Italic($"{mk.Color($"Frais de gardiennage - {amountOfStorage}€", mk.Colors.Grey)}")}", 14)}");
-            panel.TextLines.Add($"{mk.Size($"{mk.Italic($"{mk.Color($"Frais administratifs - {amountOfStorage}€", mk.Colors.Grey)}")}", 14)}");
+            panel.TextLines.Add($"{mk.Size($"{mk.Italic($"{mk.Color($"Frais administratifs - {JobImpound._jobImpoundConfig.ImpoundAdministrativeCosts}€", mk.Colors.Grey)}")}", 14)}");
 
             //Boutons
             panel.CloseButtonWithAction("Accepter", async () =>
@@ -213,7 +213,7 @@ namespace JobImpound.Panels.Impound
                             closestPlayer.biz.Bank -= total;
                             closestPlayer.biz.Save();
                         }
-                        else closestPlayer.AddMoney(total, "JobImpound - Amende fourrière");
+                        else closestPlayer.AddMoney(-total, "JobImpound - Amende fourrière");
                         player.biz.Bank += total;
                         player.biz.Save();
 

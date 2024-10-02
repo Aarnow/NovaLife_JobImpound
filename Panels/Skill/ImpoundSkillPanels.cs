@@ -115,20 +115,24 @@ namespace JobImpound.Panels.Skill
             List<JobImpound_Reason> query = await JobImpound_Reason.QueryAll();
 
             //Déclaration
-            Panel panel = Context.PanelHelper.Create("Fourrière - Raison de l'immobilisation", UIPanel.PanelType.TabPrice, player, () => ImmobiliseVehicleReasonPanel(player, vehicle));
+            Panel panel = Context.PanelHelper.Create("Fourrière - Sélectionner l'infraction", UIPanel.PanelType.TabPrice, player, () => ImmobiliseVehicleReasonPanel(player, vehicle));
 
             //Corps
-            foreach (var reason in query)
+            if(query != null && query.Count > 0)
             {
-                panel.AddTabLine($"{reason.Title}", $"{reason.Money}", reason.IconItem != default ? ItemUtils.GetIconIdByItemId(reason.IconItem) : IconUtils.Others.None.Id, _ =>
+                foreach (var reason in query)
                 {
-                    vehicle.ReasonId = reason.Id;
-                    ImmobiliseVehicleEvidencePanel(player, vehicle);
-                });
+                    panel.AddTabLine($"{reason.Title}", $"{reason.Money}", reason.IconItem != default ? ItemUtils.GetIconIdByItemId(reason.IconItem) : IconUtils.Others.None.Id, _ =>
+                    {
+                        vehicle.ReasonId = reason.Id;
+                        ImmobiliseVehicleEvidencePanel(player, vehicle);
+                    });
+                }
+                panel.NextButton("Sélectionner", () => panel.SelectTab());
             }
+            else panel.AddTabLine("Aucune infraction", _ => { });
 
             //Boutons
-            panel.NextButton("Sélectionner", () => panel.SelectTab());
             panel.AddButton("Retour", _ => AAMenu.AAMenu.menu.BizPanel(player, AAMenu.AAMenu.menu.BizTabLines));
             panel.CloseButton();
 

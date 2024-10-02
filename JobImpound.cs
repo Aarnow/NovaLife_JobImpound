@@ -92,7 +92,7 @@ namespace JobImpound
 
         public void InsertMenu()
         {
-            _menu.AddAdminTabLine(PluginInformations, 5, "JobImpound", (ui) =>
+            _menu.AddAdminPluginTabLine(PluginInformations, 5, "JobImpound", (ui) =>
             {
                 Player player = PanelHelper.ReturnPlayerFromPanel(ui);
                 PanelsManager.AdminPanels.JobImpoundPanel(player);

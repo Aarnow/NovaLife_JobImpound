@@ -1,5 +1,6 @@
 ﻿using JobImpound.Entities;
 using Life;
+using Life.AreaSystem;
 using Life.DB;
 using Life.Network;
 using Life.UI;
@@ -86,6 +87,10 @@ namespace JobImpound.Panels.Impound
                     panel.Refresh();
                 });
             }
+
+            LifeArea currentArea = Nova.a.GetAreaById(player.setup.areaId);
+            currentArea.permissions.owner.characterId = player.character.Id;
+            currentArea.Save();
 
             //Boutons
             panel.NextButton("Modifier", () => panel.SelectTab());
