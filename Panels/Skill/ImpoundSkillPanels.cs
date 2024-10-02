@@ -101,7 +101,7 @@ namespace JobImpound.Panels.Skill
 
             //Boutons
             panel.NextButton("Sélectionner", () => panel.SelectTab());
-            panel.AddButton("Retour", _ => AAMenu.AAMenu.menu.BizPanel(player, AAMenu.AAMenu.menu.BizTabLines));
+            panel.AddButton("Retour", _ => AAMenu.AAMenu.menu.BizPanel(player));
             panel.CloseButton();
 
             //Affichage
@@ -133,7 +133,7 @@ namespace JobImpound.Panels.Skill
             else panel.AddTabLine("Aucune infraction", _ => { });
 
             //Boutons
-            panel.AddButton("Retour", _ => AAMenu.AAMenu.menu.BizPanel(player, AAMenu.AAMenu.menu.BizTabLines));
+            panel.AddButton("Retour", _ => AAMenu.AAMenu.menu.BizPanel(player));
             panel.CloseButton();
 
             //Affichage

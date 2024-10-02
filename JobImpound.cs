@@ -103,7 +103,7 @@ namespace JobImpound
             {
                 Player player = PanelHelper.ReturnPlayerFromPanel(ui);
                 PanelsManager.SnippetVehiclePanels.SnippetVehiclePanel(player);
-            }, 101, null);
+            }, 101);
             #endregion
 
             #region IMPOUND SKILLS

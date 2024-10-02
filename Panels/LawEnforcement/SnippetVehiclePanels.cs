@@ -52,7 +52,7 @@ namespace JobImpound.Panels.LawEnforcement
             panel.NextButton("Sélectionner", () => panel.SelectTab());
             panel.AddButton("Retour", ui =>
             {
-                AAMenu.AAMenu.menu.ProximityBizPanel(player, AAMenu.AAMenu.menu.ProximityBizTabLines);
+                AAMenu.AAMenu.menu.ProximityPanel(player);
             });
             panel.CloseButton();
 

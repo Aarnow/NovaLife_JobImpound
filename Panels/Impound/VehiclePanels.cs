@@ -77,30 +77,30 @@ namespace JobImpound.Panels.Impound
             //Corps
             panel.AddTabLine($"{mk.Color("Modèle:", mk.Colors.Info)} {VehicleUtils.GetModelNameByModelId(vehicle.ModelId)}", "",VehicleUtils.GetIconId(vehicle.ModelId), _ =>
             {
-                player.Notify("Central", "Vous ne pouvez pas modifier cette valeur", NotificationManager.Type.Info);
+                player.Notify("Fourrière", "Vous ne pouvez pas modifier cette valeur", NotificationManager.Type.Info);
                 panel.Refresh();
             });
             panel.AddTabLine($"{mk.Color("Plaque:", mk.Colors.Info)} {(vehicle.Plate != null ? $"{vehicle.Plate}" : $"{mk.Color("inconnu", mk.Colors.Grey)}")}", _ =>
             {
-                player.Notify("Central", "Vous ne pouvez pas modifier cette valeur", NotificationManager.Type.Info);
+                player.Notify("Fourrière", "Vous ne pouvez pas modifier cette valeur", NotificationManager.Type.Info);
                 panel.Refresh();
             });
             panel.AddTabLine($"{mk.Color("Raison:", mk.Colors.Info)} {(reason != null && reason.Count > 0 ? reason[0].Title : $"{mk.Color("inconnu", mk.Colors.Grey)}")}", _ => SetVehicleReason(player,vehicle));
             panel.AddTabLine($"{mk.Color("Preuve:", mk.Colors.Info)} {(vehicle.Evidence?.Length > 0 ? $"{vehicle.Evidence}" : $"{mk.Color("aucune", mk.Colors.Grey)}")}", _ => SetVehicleEvidence(player,vehicle));
             panel.AddTabLine($"{mk.Color("Statut:", mk.Colors.Info)} {EnumUtils.GetDisplayName(vehicle.LStatus)}", _ =>
             {
-                player.Notify("Central", "Vous ne pouvez pas modifier cette valeur", NotificationManager.Type.Info);
+                player.Notify("Fourrière", "Vous ne pouvez pas modifier cette valeur", NotificationManager.Type.Info);
                 panel.Refresh();
             });
 
             panel.AddTabLine($"{mk.Color("Créer le:", mk.Colors.Orange)} {(vehicle.CreatedAt != default ? DateUtils.FormatUnixTimestamp(vehicle.CreatedAt) : "-")}", _ =>
             {
-                player.Notify("Central", "Vous ne pouvez pas modifier cette valeur", NotificationManager.Type.Info);
+                player.Notify("Fourrière", "Vous ne pouvez pas modifier cette valeur", NotificationManager.Type.Info);
                 panel.Refresh();
             });
             panel.AddTabLine($"{mk.Color("Créer par:", mk.Colors.Orange)} {(vehicle.CreatedBy != null ? $"{vehicle.CreatedBy}" : $"{mk.Color("aucune", mk.Colors.Grey)}")}", _ =>
             {
-                player.Notify("Central", "Vous ne pouvez pas modifier cette valeur", NotificationManager.Type.Info);
+                player.Notify("Fourrière", "Vous ne pouvez pas modifier cette valeur", NotificationManager.Type.Info);
                 panel.Refresh();
             });
 
@@ -108,12 +108,12 @@ namespace JobImpound.Panels.Impound
             {
                 panel.AddTabLine($"{mk.Color("Libéré le:", mk.Colors.Orange)} {(vehicle.ReleasedAt != default ? DateUtils.FormatUnixTimestamp(vehicle.ReleasedAt) : "-")}", _ =>
                 {
-                    player.Notify("Central", "Vous ne pouvez pas modifier cette valeur", NotificationManager.Type.Info);
+                    player.Notify("Fourrière", "Vous ne pouvez pas modifier cette valeur", NotificationManager.Type.Info);
                     panel.Refresh();
                 });
                 panel.AddTabLine($"{mk.Color("Libéré par:", mk.Colors.Orange)} {(vehicle.ReleasedBy != null ? $"{vehicle.ReleasedBy}" : $"{mk.Color("aucune", mk.Colors.Grey)}")}", _ =>
                 {
-                    player.Notify("Central", "Vous ne pouvez pas modifier cette valeur", NotificationManager.Type.Info);
+                    player.Notify("Fourrière", "Vous ne pouvez pas modifier cette valeur", NotificationManager.Type.Info);
                     panel.Refresh();
                 });
             }
@@ -140,7 +140,7 @@ namespace JobImpound.Panels.Impound
                             player.Notify("Fourrière", $"Vous tendez l'amende à {closestPlayer.GetFullName()}", NotificationManager.Type.Info);
                             return Task.FromResult(true);
                         }
-                        else player.Notify("Carte Grise", $"Ce citoyen n'est pas propriétaire du véhicule ou PDG de la société possédant le véhicule", NotificationManager.Type.Info);
+                        else player.Notify("Fourrière", $"Ce citoyen n'est pas propriétaire du véhicule ou PDG de la société possédant le véhicule", NotificationManager.Type.Info);
                     }
                     else player.Notify("Fourrière", "Aucun citoyen n'est à proximité", NotificationManager.Type.Warning);
 
